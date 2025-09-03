@@ -1,0 +1,47 @@
+{
+  "name": "bmad-research-framework",
+  "version": "1.0.0",
+  "description": "通用科研智能体框架 - 基于BMAD-METHOD的科学研究AI辅助系统",
+  "keywords": [
+    "research",
+    "academic",
+    "ai",
+    "agents",
+    "framework",
+    "literature-review",
+    "grant-application",
+    "peer-review",
+    "bmad-extension"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/bmad-research-framework.git"
+  },
+  "license": "MIT",
+  "author": "Your Name <your.email@example.com>",
+  "main": "tools/cli.js",
+  "bin": {
+    "bmad-research": "tools/bmad-npx-wrapper.js",
+    "research-framework": "tools/bmad-npx-wrapper.js"
+  },
+  "scripts": {
+    "build": "node tools/cli.js build",
+    "validate": "node tools/cli.js validate",
+    "install:framework": "node tools/installer/bin/bmad.js install --expansion-packs bmad-research-framework"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^14.0.0",
+    "fs-extra": "^11.3.1",
+    "glob": "^11.0.3",
+    "inquirer": "^8.2.6",
+    "js-yaml": "^4.1.0",
+    "ora": "^5.4.1"
+  },
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,298 @@
+# <!-- Powered by BMAD™ Core -->
+---
+workflow:
+  id: universal-research-workflow
+  name: 通用科研工作流程
+  version: 1.0
+  description: 适用于任意学科领域的科学研究全生命周期工作流
+  
+metadata:
+  domain: "通用科研"
+  complexity: "high"
+  estimated_duration: "12-36个月"
+  team_size: "5-15人"
+
+# 工作流程四大阶段
+phases:
+  - id: planning_configuration
+    name: 规划配置阶段
+    duration: "2-4周"
+    description: "项目战略规划和智能体团队自动配置"
+    
+  - id: research_preparation  
+    name: 研究准备阶段
+    duration: "4-8周"
+    description: "文献调研和申请报告撰写"
+    
+  - id: execution_phase
+    name: 执行阶段  
+    duration: "核心研究周期"
+    description: "专业团队并行执行和实时协调"
+    
+  - id: reporting_phase
+    name: 成果报告阶段
+    duration: "2-4周"  
+    description: "结果分析和研究报告撰写"
+
+# 详细步骤定义
+steps:
+  # 阶段1: 规划配置阶段
+  - id: strategy_planning
+    name: 研究策略规划
+    phase: planning_configuration
+    agent: research-strategy-planner
+    duration: "3-5天"
+    description: "分析研究想法，制定项目策略"
+    inputs: 
+      - "用户研究想法描述"
+      - "项目基本要求"
+    outputs:
+      - "项目可行性报告"
+      - "风险评估报告"
+      - "资源需求分析"
+    tasks:
+      - "*strategy-analysis"
+      - "*feasibility-study"
+      - "*risk-assessment"
+
+  - id: auto_configuration
+    name: 自动项目配置
+    phase: planning_configuration
+    agent: project-auto-configurator
+    duration: "2-3天"
+    description: "自动分析项目需求并生成专业团队配置"
+    depends_on: ["strategy_planning"]
+    inputs:
+      - "项目策略规划结果"
+      - "研究内容分析"
+    outputs:
+      - "专业智能体配置方案"
+      - "团队组织结构设计"
+      - "评议专家配置"
+    tasks:
+      - "*auto-analyze"
+      - "*generate-config"
+      - "*config-validation"
+
+  - id: user_config_review
+    name: 用户配置审查
+    phase: planning_configuration  
+    agent: "human-user"
+    duration: "1-2天"
+    description: "用户审查和确认自动生成的配置"
+    depends_on: ["auto_configuration"]
+    interaction_required: true
+    inputs:
+      - "自动生成的配置方案"
+    outputs:
+      - "用户确认的最终配置"
+      - "配置修改记录"
+
+  # 阶段2: 研究准备阶段
+  - id: literature_research
+    name: 文献调研
+    phase: research_preparation
+    agent: literature-research-expert
+    duration: "2-3周"
+    description: "深度文献调研和知识图谱构建"
+    depends_on: ["user_config_review"]
+    inputs:
+      - "确认的项目配置"
+      - "研究领域定义"
+    outputs:
+      - "结构化研究知识库"
+      - "研究空白识别报告"
+      - "前沿趋势分析"
+    tasks:
+      - "*literature-survey"
+      - "*knowledge-mapping"
+      - "*gap-analysis"
+
+  - id: knowledge_management
+    name: 知识库管理
+    phase: research_preparation
+    agent: research-knowledge-manager
+    duration: "3-5天"
+    description: "构建可查询的知识管理系统"
+    depends_on: ["literature_research"]
+    inputs:
+      - "文献调研结果"
+      - "知识图谱数据"
+    outputs:
+      - "结构化知识查询接口"
+      - "引用支撑体系"
+
+  - id: application_writing
+    name: 申请报告撰写
+    phase: research_preparation
+    agent: grant-application-writer
+    duration: "1-2周"
+    description: "撰写标准化学术申请报告"
+    depends_on: ["knowledge_management"]
+    inputs:
+      - "研究知识库"
+      - "项目目标和内容"
+      - "团队基础信息"
+    outputs:
+      - "完整申请报告"
+      - "项目摘要"
+      - "研究方案"
+    tasks:
+      - "*write-application"
+      - "*write-abstract"
+      - "*write-basis"
+
+  - id: peer_review
+    name: 同行评议
+    phase: research_preparation
+    agent: peer-review-coordinator
+    duration: "1周"
+    description: "组织专业同行评议"
+    depends_on: ["application_writing"]
+    inputs:
+      - "申请报告"
+      - "评议专家配置"
+    outputs:
+      - "评议报告"
+      - "修改建议"
+    parallel_agents:
+      - "peer-reviewer-template (configured instances)"
+
+  - id: human_decision
+    name: 人工评阅决策
+    phase: research_preparation
+    agent: "human-user"
+    duration: "2-3天"
+    description: "基于评议结果进行最终决策"
+    depends_on: ["peer_review"]
+    interaction_required: true
+    inputs:
+      - "同行评议结果"
+      - "专家修改建议"
+    outputs:
+      - "项目执行批准"
+      - "修改后的研究方案"
+
+  # 阶段3: 执行阶段
+  - id: team_instantiation
+    name: 专业团队实例化
+    phase: execution_phase
+    agent: specialist-configurator
+    duration: "2-3天"
+    description: "根据配置实例化专业执行团队"
+    depends_on: ["human_decision"]
+    inputs:
+      - "确认的配置方案"
+      - "专业知识库集合"
+    outputs:
+      - "实例化的专业智能体团队"
+      - "团队协作接口"
+
+  - id: coordinated_research
+    name: 协调式并行研究
+    phase: execution_phase  
+    agent: research-execution-coordinator
+    duration: "主要研究周期"
+    description: "多专业团队并行执行和实时协调"
+    depends_on: ["team_instantiation"]
+    parallel_execution: true
+    inputs:
+      - "研究任务分配"
+      - "专业智能体团队"
+    outputs:
+      - "各专业领域研究结果"
+      - "阶段性进展报告"
+      - "问题解决方案"
+    sub_agents:
+      - "research-lead-template (multiple instances)"
+      - "research-specialist-template (multiple instances)"
+
+  # 阶段4: 成果报告阶段  
+  - id: result_interpretation
+    name: 结果解释分析
+    phase: reporting_phase
+    agent: result-interpreter
+    duration: "1周"
+    description: "综合分析和解释研究结果"
+    depends_on: ["coordinated_research"]
+    inputs:
+      - "各专业团队研究结果"
+      - "原始数据和分析"
+      - "研究知识库支撑"
+    outputs:
+      - "结果综合分析报告"
+      - "科学发现总结"
+      - "创新点识别"
+
+  - id: report_writing
+    name: 研究报告撰写
+    phase: reporting_phase
+    agent: report-writer
+    duration: "1-2周"
+    description: "撰写标准化研究报告"
+    depends_on: ["result_interpretation"]
+    inputs:
+      - "结果分析报告"
+      - "研究知识库"
+      - "原始研究数据"
+    outputs:
+      - "完整研究报告"
+      - "学术论文草稿"
+      - "应用转化建议"
+
+  - id: final_peer_review
+    name: 最终同行评议
+    phase: reporting_phase
+    agent: peer-review-coordinator
+    duration: "1周"
+    description: "研究成果的专业评议验证"
+    depends_on: ["report_writing"]
+    inputs:
+      - "研究报告"
+      - "科研成果"
+    outputs:
+      - "成果评议报告"
+      - "发表建议"
+      - "改进意见"
+
+# 质量检查点
+quality_gates:
+  - step: "strategy_planning"
+    criteria: ["可行性确认", "风险可控", "资源充足"]
+    
+  - step: "user_config_review"  
+    criteria: ["配置完整", "专业覆盖充分", "团队规模合理"]
+    
+  - step: "literature_research"
+    criteria: ["文献全面", "知识库结构化", "研究空白明确"]
+    
+  - step: "peer_review"
+    criteria: ["专家评议通过", "修改建议合理", "创新性认可"]
+    
+  - step: "coordinated_research"
+    criteria: ["各专业目标达成", "数据质量合格", "方法执行正确"]
+    
+  - step: "final_peer_review"
+    criteria: ["成果质量达标", "学术贡献明确", "应用价值清晰"]
+
+# 风险控制机制
+risk_management:
+  - risk: "专业配置不足"
+    mitigation: "动态调整团队配置"
+    contingency: "引入外部专家"
+    
+  - risk: "研究进度延误"
+    mitigation: "定期进度检查和调整"
+    contingency: "优化时间分配和资源投入"
+    
+  - risk: "跨专业协调困难"
+    mitigation: "加强沟通机制"
+    contingency: "引入协调专家"
+
+# 成功标准
+success_criteria:
+  - "按时完成各阶段里程碑"
+  - "产出高质量的研究成果"  
+  - "通过同行评议验证"
+  - "实现预期的学术或应用价值"
+  - "建立可复用的研究方法"

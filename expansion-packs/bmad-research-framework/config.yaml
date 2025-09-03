@@ -1,0 +1,103 @@
+# <!-- Powered by BMAD™ Core -->
+
+name: "bmad-research-framework"
+version: "1.0.0"
+description: "通用科学研究智能体框架 - 支持任意学科领域的科研项目规划、执行和报告撰写"
+
+compatibility:
+  bmad-core: "^4.0.0"
+  node: ">=20.0.0"
+
+extends:
+  - "bmad-core"
+
+# 提供的智能体列表
+agents:
+  # 规划与配置层
+  - id: "research-strategy-planner"
+    name: "研究策略规划师"
+    role: "科研项目整体策略规划"
+    
+  - id: "project-auto-configurator" 
+    name: "项目自动配置器"
+    role: "自动分析项目需求并生成专业配置"
+    
+  - id: "literature-research-expert"
+    name: "文献调研专家"
+    role: "深度文献调研和知识图谱构建"
+    
+  - id: "research-knowledge-manager"
+    name: "研究知识管理器"
+    role: "知识库管理和查询接口"
+    
+  # 申请与评议层
+  - id: "grant-application-writer"
+    name: "申请报告撰写师"
+    role: "标准化学术申请报告生成"
+    
+  - id: "peer-review-coordinator"
+    name: "同行评议协调员"
+    role: "组织和协调评议流程"
+    
+  - id: "peer-reviewer-template"
+    name: "同行评议专家模板"
+    role: "可配置的专业评议专家"
+    
+  # 执行与协调层
+  - id: "research-execution-coordinator"
+    name: "研究执行协调员"
+    role: "协调各执行团队和资源配置"
+    
+  - id: "specialist-configurator"
+    name: "专业智能体配置器"
+    role: "动态实例化专业执行智能体"
+    
+  - id: "research-lead-template"
+    name: "研究团队组长模板"
+    role: "可配置的团队领导智能体"
+    
+  - id: "research-specialist-template"
+    name: "研究专家模板"
+    role: "可配置的专业领域研究专家"
+    
+  # 成果与报告层
+  - id: "result-interpreter"
+    name: "结果解释专家"
+    role: "科研结果分析和解释"
+    
+  - id: "report-writer"
+    name: "报告撰写专家"
+    role: "标准化研究报告撰写"
+
+# 提供的工作流列表
+workflows:
+  - id: "universal-research-workflow"
+    name: "通用科研工作流程"
+    phases: ["规划配置", "研究准备", "执行阶段", "成果报告"]
+    
+  - id: "nsfc-application-workflow"
+    name: "国自然申请工作流"
+    phases: ["项目配置", "文献调研", "申请撰写", "同行评议"]
+
+# 提供的模板列表
+templates:
+  - id: "nsfc-core-application-template"
+    name: "国自然申请书核心模板"
+    format: "yaml"
+    
+  - id: "research-knowledge-base-template"
+    name: "研究知识库模板"
+    format: "yaml"
+    
+  - id: "project-config-template"
+    name: "项目配置模板"
+    format: "yaml"
+
+# 依赖的其他扩展包
+dependencies: []
+
+# 团队配置
+teams:
+  - id: "research-full-team"
+    name: "完整科研团队"
+    description: "包含所有角色的完整科研支撑团队"

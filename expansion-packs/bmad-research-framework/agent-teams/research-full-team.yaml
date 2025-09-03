@@ -1,0 +1,212 @@
+# <!-- Powered by BMAD™ Core -->
+---
+team:
+  id: research-full-team
+  name: 完整科研支撑团队
+  version: 1.0
+  description: 涵盖科研全生命周期的完整智能体团队配置
+  domain: "通用科学研究"
+  use_case: "任意学科领域的科研项目"
+
+# 团队层级结构
+hierarchy:
+  - level: "战略规划层"
+    agents: ["research-strategy-planner", "project-auto-configurator"]
+    responsibility: "项目整体规划和智能配置"
+    
+  - level: "知识管理层"  
+    agents: ["literature-research-expert", "research-knowledge-manager"]
+    responsibility: "文献调研和知识体系构建"
+    
+  - level: "申请撰写层"
+    agents: ["grant-application-writer"]
+    responsibility: "标准化学术申请报告生成"
+    
+  - level: "评议协调层"
+    agents: ["peer-review-coordinator", "peer-reviewer-template"]
+    responsibility: "同行评议组织和质量控制"
+    
+  - level: "执行协调层"
+    agents: ["research-execution-coordinator", "specialist-configurator"]
+    responsibility: "研究执行统筹和团队管理"
+    
+  - level: "专业执行层"
+    agents: ["research-lead-template", "research-specialist-template"]
+    responsibility: "具体专业研究和技术实现"
+    
+  - level: "成果输出层"
+    agents: ["result-interpreter", "report-writer"]
+    responsibility: "结果分析和报告撰写"
+
+# 核心团队成员定义
+members:
+  # 战略规划团队
+  - agent: research-strategy-planner
+    role: "首席策略规划师"
+    responsibility: "项目整体战略制定"
+    key_skills: ["可行性分析", "风险评估", "资源规划"]
+    interactions: ["project-auto-configurator", "literature-research-expert"]
+    
+  - agent: project-auto-configurator
+    role: "智能配置专家"
+    responsibility: "自动生成专业团队配置"
+    key_skills: ["需求分析", "智能匹配", "配置优化"]
+    interactions: ["research-strategy-planner", "specialist-configurator"]
+
+  # 知识管理团队
+  - agent: literature-research-expert
+    role: "文献调研专家"
+    responsibility: "深度文献调研和知识图谱构建"
+    key_skills: ["文献检索", "知识抽取", "趋势分析"]
+    interactions: ["research-knowledge-manager", "grant-application-writer"]
+    
+  - agent: research-knowledge-manager
+    role: "知识管理专家"
+    responsibility: "结构化知识库管理"
+    key_skills: ["知识组织", "查询接口", "知识更新"]
+    interactions: ["literature-research-expert", "grant-application-writer", "report-writer"]
+
+  # 申请撰写团队
+  - agent: grant-application-writer
+    role: "申请报告撰写师"
+    responsibility: "高质量申请报告生成"
+    key_skills: ["学术写作", "逻辑构建", "创新表达"]
+    interactions: ["research-knowledge-manager", "peer-review-coordinator"]
+
+  # 评议协调团队
+  - agent: peer-review-coordinator
+    role: "评议协调员"
+    responsibility: "同行评议流程管理"
+    key_skills: ["评议组织", "专家协调", "质量控制"]
+    interactions: ["grant-application-writer", "peer-reviewer-template", "report-writer"]
+    
+  - agent: peer-reviewer-template
+    role: "同行评议专家"
+    responsibility: "专业评议和反馈"
+    key_skills: ["专业评估", "建设性反馈", "质量把关"]
+    configuration: "runtime_instantiation"
+    instances: "multiple_based_on_project"
+
+  # 执行协调团队
+  - agent: research-execution-coordinator
+    role: "研究执行总协调"
+    responsibility: "统筹协调各专业执行团队"
+    key_skills: ["项目管理", "团队协调", "进度控制"]
+    interactions: ["specialist-configurator", "research-lead-template", "result-interpreter"]
+    
+  - agent: specialist-configurator
+    role: "专业智能体配置器"
+    responsibility: "动态实例化专业执行智能体"
+    key_skills: ["动态配置", "资源分配", "团队组建"]
+    interactions: ["project-auto-configurator", "research-execution-coordinator"]
+
+  # 专业执行团队（模板化，运行时实例化）
+  - agent: research-lead-template
+    role: "研究团队组长"
+    responsibility: "专业团队领导和协调"
+    key_skills: ["团队管理", "专业协调", "上下级沟通"]
+    configuration: "runtime_instantiation"
+    instances: "multiple_based_on_teams"
+    
+  - agent: research-specialist-template
+    role: "专业研究专家"
+    responsibility: "领域专业研究执行"
+    key_skills: ["专业分析", "技术实现", "结果验证"]
+    configuration: "runtime_instantiation"
+    instances: "multiple_based_on_domains"
+
+  # 成果输出团队
+  - agent: result-interpreter
+    role: "结果解释专家"
+    responsibility: "研究结果综合分析和解释"
+    key_skills: ["结果分析", "模式识别", "意义阐释"]
+    interactions: ["research-execution-coordinator", "report-writer"]
+    
+  - agent: report-writer
+    role: "报告撰写专家"
+    responsibility: "标准化研究报告撰写"
+    key_skills: ["科技写作", "逻辑组织", "成果展示"]
+    interactions: ["result-interpreter", "research-knowledge-manager"]
+
+# 协作模式定义
+collaboration_patterns:
+  # 顺序协作模式
+  sequential_flow:
+    - "research-strategy-planner → project-auto-configurator"
+    - "literature-research-expert → research-knowledge-manager"
+    - "research-knowledge-manager → grant-application-writer"
+    - "grant-application-writer → peer-review-coordinator"
+    - "research-execution-coordinator → result-interpreter"
+    - "result-interpreter → report-writer"
+    
+  # 并行协作模式
+  parallel_execution:
+    - group: "专业执行团队"
+      agents: ["research-lead-template", "research-specialist-template"]
+      coordination: "research-execution-coordinator"
+      
+    - group: "同行评议团队"
+      agents: ["peer-reviewer-template (multiple instances)"]
+      coordination: "peer-review-coordinator"
+      
+  # 反馈协作模式
+  feedback_loops:
+    - "peer-review-coordinator ↔ grant-application-writer"
+    - "research-execution-coordinator ↔ research-lead-template"
+    - "research-knowledge-manager ↔ report-writer"
+
+# 团队规模配置
+team_scaling:
+  minimal_config:
+    total_agents: 8
+    description: "小型项目的精简配置"
+    specialist_instances: 2
+    reviewer_instances: 2
+    
+  standard_config:
+    total_agents: 12
+    description: "中等项目的标准配置"
+    specialist_instances: 4
+    reviewer_instances: 3
+    
+  full_config:
+    total_agents: 18
+    description: "大型项目的完整配置"
+    specialist_instances: 6
+    reviewer_instances: 4
+
+# 质量保证机制
+quality_assurance:
+  peer_review_points:
+    - "申请报告完成后"
+    - "研究成果产出后"
+    - "最终报告撰写后"
+    
+  cross_validation:
+    - "多专家独立评议"
+    - "结果交叉验证"
+    - "方法论审查"
+    
+  continuous_improvement:
+    - "定期团队协调会议"
+    - "工作方法优化"
+    - "知识库持续更新"
+
+# 启动配置指南
+setup_guide:
+  project_initialization:
+    1: "启动 research-strategy-planner 进行项目规划"
+    2: "运行 project-auto-configurator 生成团队配置"
+    3: "用户确认和修改配置方案"
+    4: "按配置实例化专业智能体团队"
+    
+  runtime_management:
+    - "通过 research-execution-coordinator 统筹管理"
+    - "定期检查各团队进展和协作状态"
+    - "根据需要动态调整团队配置"
+    
+  success_metrics:
+    - "项目目标按时达成"
+    - "研究质量达到预期标准"
+    - "团队协作效率高效"
+    - "成果通过同行评议验证"

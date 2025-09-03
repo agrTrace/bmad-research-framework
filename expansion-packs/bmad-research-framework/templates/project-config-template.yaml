@@ -1,0 +1,130 @@
+# <!-- Powered by BMAD™ Core -->
+---
+template:
+  id: project-config-template
+  name: 科研项目配置模板
+  version: 1.0
+  description: 用于自动配置科研项目专业智能体团队的标准模板
+  output:
+    format: yaml
+    filename: "{{project_name}}-config.yaml"
+
+workflow:
+  elicitation: true
+  allow_skip: false
+
+sections:
+  - id: project_analysis
+    title: 项目分析结果
+    instruction: |
+      基于项目描述自动分析的结果：
+      - project_type: 项目类型分类
+      - complexity_level: 复杂度等级 (high/medium/low)
+      - estimated_duration: 预估研究周期
+      - identified_domains: 识别的专业领域列表
+      - primary_challenges: 主要技术挑战
+    elicit: false  # 自动生成，不需要用户输入
+
+  - id: specialist_configuration
+    title: 专业智能体配置
+    instruction: |
+      为每个识别的专业领域配置相应的研究专家：
+      每个配置项包括：
+      - template: research-specialist-template (固定值)
+      - domain: 具体专业领域名称
+      - knowledge_base: 对应的知识库标识
+      - role: 在项目中的具体职责描述
+      - priority: 优先级等级 (high/medium/low)
+      - team_assignment: 分配的团队编号
+    elicit: true  # 允许用户修改
+
+  - id: peer_reviewer_configuration  
+    title: 同行评议专家配置
+    instruction: |
+      配置项目所需的同行评议专家：
+      每个配置项包括：
+      - template: peer-reviewer-template (固定值)
+      - domain: 评议的专业领域
+      - expertise_level: 专业水平 (senior/expert/specialist)
+      - focus_area: 专注的评议方向
+      - review_phase: 参与的评议阶段 (proposal/interim/final)
+    elicit: true  # 允许用户修改
+
+  - id: team_structure
+    title: 团队组织结构
+    instruction: |
+      设计项目的团队组织架构：
+      - recommended_teams: 推荐的团队数量
+      - specialists_per_team: 每团队的专家数量
+      - coordination_method: 协调方式 (hierarchical/matrix/flat)
+      - communication_frequency: 沟通频率
+      - milestone_schedule: 里程碑时间表
+    elicit: true  # 允许用户修改
+
+  - id: resource_requirements
+    title: 资源需求评估
+    instruction: |
+      评估项目的资源需求：
+      - computational_resources: 计算资源需求
+      - data_requirements: 数据获取需求
+      - equipment_needs: 设备需求
+      - external_collaboration: 外部协作需求
+      - timeline_constraints: 时间约束条件
+    elicit: true  # 允许用户修改
+
+  - id: quality_assurance
+    title: 质量保证机制
+    instruction: |
+      建立项目质量保证体系：
+      - review_checkpoints: 评审检查点设置
+      - quality_metrics: 质量评估指标
+      - risk_mitigation: 风险缓解策略
+      - continuous_improvement: 持续改进机制
+    elicit: true  # 允许用户修改
+
+# 配置输出示例
+example_output:
+  project_analysis:
+    project_type: "水利工程调水项目"
+    complexity_level: "high"
+    estimated_duration: "36个月"
+    identified_domains: ["水文学", "水力学", "结构工程", "环境工程"]
+    primary_challenges: ["多尺度建模", "不确定性量化", "环境影响评估"]
+
+  specialist_configuration:
+    - template: research-specialist-template
+      domain: "水文学"
+      knowledge_base: "hydrology-kb"
+      role: "水文数据采集与分析"
+      priority: "high"
+      team_assignment: 1
+    - template: research-specialist-template
+      domain: "水力学"  
+      knowledge_base: "hydraulics-kb"
+      role: "水力建模与仿真"
+      priority: "high"
+      team_assignment: 1
+
+  peer_reviewer_configuration:
+    - template: peer-reviewer-template
+      domain: "水利工程"
+      expertise_level: "senior"
+      focus_area: "整体技术路线"
+      review_phase: "proposal"
+
+  team_structure:
+    recommended_teams: 3
+    specialists_per_team: "2-3"
+    coordination_method: "hierarchical"
+    communication_frequency: "weekly"
+
+# 用户定制化说明
+customization_notes: |
+  用户可以在自动生成的配置基础上进行以下修改：
+  1. 添加或删除专业智能体
+  2. 调整专家的优先级和团队分配
+  3. 修改团队组织结构
+  4. 自定义质量保证机制
+  5. 调整资源需求和时间安排
+  
+  所有修改都会保留在最终配置文件中。

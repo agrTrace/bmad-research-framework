@@ -1,0 +1,157 @@
+# <!-- Powered by BMAD™ Core -->
+---
+template:
+  id: research-knowledge-base-template
+  name: 研究知识库模板
+  version: 1.0
+  description: 用于文献调研专家构建结构化研究知识库的标准模板
+  output:
+    format: yaml
+    filename: "{{research_domain}}-knowledge-base.yaml"
+
+workflow:
+  elicitation: true
+  allow_skip: false
+
+sections:
+  - id: meta_information
+    title: 元信息
+    instruction: |
+      记录知识库的基本信息：
+      - research_domain: 研究领域
+      - search_strategy: 检索策略概述
+      - search_date_range: 检索时间范围
+      - databases_used: 使用的数据库
+      - total_papers_found: 检索到的文献总数
+      - selected_papers: 筛选后的文献数量
+      - last_update: 最后更新时间
+    elicit: true
+
+  - id: literature_summary
+    title: 文献综述总结
+    instruction: |
+      基于文献分析的综合总结：
+      - current_status: 该领域当前研究现状的综述（500-800字）
+      - key_technologies: 关键技术和方法列表
+      - research_gaps: 识别的研究空白和不足
+      - methodologies: 主要采用的研究方法
+      - theoretical_frameworks: 主要理论框架
+      - measurement_approaches: 主要测量和评估方法
+    elicit: true
+
+  - id: key_references
+    title: 核心参考文献
+    instruction: |
+      重要文献的结构化信息：
+      每篇文献包含：
+      - citation: 完整的引用格式
+      - authors: 主要作者
+      - publication_year: 发表年份
+      - journal_conference: 发表期刊或会议
+      - relevance_score: 与本研究的关联度 (1-10)
+      - key_findings: 主要发现和贡献
+      - methodology: 采用的研究方法
+      - limitations: 研究局限性
+      - future_work: 提出的未来工作方向
+    elicit: true
+
+  - id: research_trends
+    title: 研究趋势分析
+    instruction: |
+      基于文献时间分布的趋势分析：
+      - emerging_directions: 新兴研究方向
+      - hot_topics: 当前热点问题
+      - declining_areas: 关注度下降的领域
+      - controversial_issues: 存在争议的问题
+      - interdisciplinary_opportunities: 跨学科合作机会
+      - future_predictions: 对未来发展的预测
+    elicit: true
+
+  - id: knowledge_graph
+    title: 知识图谱结构
+    instruction: |
+      构建概念和关系的图谱：
+      - core_concepts: 核心概念节点列表
+      - concept_definitions: 概念定义和解释
+      - relationships: 概念间关系边列表
+      - concept_hierarchy: 概念层次结构
+      - semantic_clusters: 语义聚类结果
+      - keyword_network: 关键词共现网络
+    elicit: true
+
+  - id: research_gaps_analysis
+    title: 研究空白分析
+    instruction: |
+      深度分析研究空白和机会：
+      - methodological_gaps: 方法学空白
+      - theoretical_gaps: 理论空白
+      - empirical_gaps: 实证研究空白
+      - application_gaps: 应用转化空白
+      - technology_gaps: 技术实现空白
+      - data_gaps: 数据和资源空白
+      - innovation_opportunities: 创新机会点
+    elicit: true
+
+  - id: citation_network
+    title: 引用关系网络
+    instruction: |
+      文献引用关系分析：
+      - highly_cited_papers: 高被引文献列表
+      - citation_clusters: 引用聚类分析
+      - influential_authors: 有影响力的作者
+      - research_lineages: 研究谱系追踪
+      - collaborative_networks: 合作网络分析
+    elicit: true
+
+  - id: quality_assessment
+    title: 文献质量评估
+    instruction: |
+      文献质量和可信度评估：
+      - quality_criteria: 质量评估标准
+      - evidence_levels: 证据等级分类
+      - study_designs: 研究设计类型统计
+      - sample_sizes: 样本规模分析
+      - replication_studies: 重复验证研究
+      - peer_review_status: 同行评议状态
+    elicit: true
+
+# 知识库输出示例结构
+example_structure:
+  meta_information:
+    research_domain: "水利工程调水系统"
+    search_date_range: "2019-2024"
+    total_papers_found: 1250
+    selected_papers: 85
+    
+  literature_summary:
+    current_status: "当前调水工程研究主要集中在..."
+    key_technologies: ["数值模拟", "优化算法", "监测技术"]
+    research_gaps: ["多尺度耦合建模", "不确定性量化"]
+    
+  knowledge_graph:
+    core_concepts: ["调水工程", "水资源配置", "生态影响"]
+    relationships: [
+      {source: "调水工程", target: "生态影响", type: "影响"},
+      {source: "数值模拟", target: "调水工程", type: "分析工具"}
+    ]
+
+# 查询接口定义
+query_interface:
+  - query_type: "concept_lookup"
+    description: "根据概念名称查询定义和相关文献"
+    
+  - query_type: "gap_identification" 
+    description: "查询特定方向的研究空白"
+    
+  - query_type: "method_recommendation"
+    description: "推荐适用的研究方法"
+    
+  - query_type: "citation_support"
+    description: "为特定论述提供引用支撑"
+
+# 更新维护机制
+maintenance:
+  update_frequency: "季度更新"
+  version_control: "保留历史版本"
+  quality_check: "定期质量审查"
+  expansion_strategy: "增量式扩展"

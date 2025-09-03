@@ -1,0 +1,164 @@
+# <!-- Powered by BMAD™ Core -->
+---
+template:
+  id: nsfc-core-application-template
+  name: 国自然申请书核心内容模板
+  version: 2.1
+  description: 国家自然科学基金申请书的核心学术内容模板（排除用户手动填写部分）
+  output:
+    format: markdown
+    filename: "{{project_name}}-nsfc-application.md"
+
+workflow:
+  elicitation: true
+  allow_skip: false
+
+# AI智能体负责生成的核心学术内容
+sections:
+  - id: project_abstract
+    title: 项目摘要
+    instruction: |
+      生成项目的中英文摘要：
+      - 中文摘要：400字以内，包含研究背景、目标、方法、预期成果
+      - 英文摘要：对应的英文翻译
+      - 中文关键词：3-5个关键词
+      - 英文关键词：对应的英文关键词
+      
+      要求：语言精练、逻辑清晰、突出创新点
+    elicit: true
+
+  - id: project_basis_and_content
+    title: 立项依据与研究内容
+    instruction: |
+      基于文献调研知识库撰写立项依据：
+      
+      1. 项目的立项依据
+      - 研究意义：阐述项目的科学价值和实际意义
+      - 国内外研究现状：基于文献知识库的现状分析
+      - 存在问题：识别的研究空白和技术挑战
+      - 研究必要性：论证开展此项研究的必要性
+      
+      2. 项目的研究内容、研究目标及拟解决的关键问题
+      - 研究内容：具体的研究内容划分
+      - 研究目标：明确的总体目标和分目标
+      - 关键问题：拟解决的核心技术和科学问题
+      
+      3. 本项目的特色与创新之处
+      - 理论创新点
+      - 方法创新点  
+      - 技术创新点
+      - 与现有研究的差异化优势
+    elicit: true
+    data_source: "literature_knowledge_base"
+
+  - id: research_plan_feasibility
+    title: 研究方案及可行性分析
+    instruction: |
+      设计详细的研究方案：
+      
+      1. 拟采取的研究方案
+      - 总体技术路线
+      - 研究方法体系
+      - 实施步骤安排
+      
+      2. 技术路线和具体方法
+      - 关键技术路线图
+      - 各阶段采用的具体方法
+      - 创新方法的设计思路
+      
+      3. 可行性分析
+      - 技术可行性：技术成熟度和实现难度
+      - 条件可行性：现有条件和资源支撑
+      - 时间可行性：时间安排的合理性
+      
+      4. 预期遇到的困难和解决方案
+      - 主要技术难点
+      - 风险因素识别
+      - 应对策略和备选方案
+    elicit: true
+    data_source: "specialist_recommendations"
+
+  - id: research_foundation
+    title: 研究基础与工作条件
+    instruction: |
+      阐述项目的研究基础：
+      
+      1. 前期相关研究工作积累
+      - 相关研究经历和成果
+      - 已有的理论基础
+      - 前期探索性研究结果
+      
+      2. 已有工作基础
+      - 团队在相关领域的工作基础
+      - 已掌握的关键技术
+      - 相关的研究平台和条件
+      
+      3. 与本项目相关的代表性成果
+      - 相关发表论文
+      - 已有的技术积累
+      - 相关项目经验
+      
+      注意：此部分需要用户提供具体的团队基础信息，AI主要负责内容组织和表达优化
+    elicit: true
+    data_source: "user_provided_foundation"
+
+  - id: expected_outcomes
+    title: 预期研究结果
+    instruction: |
+      明确项目的预期成果：
+      
+      1. 预期目标和阶段性目标
+      - 总体目标描述
+      - 各阶段的具体目标
+      - 可量化的指标设定
+      
+      2. 预期成果形式
+      - 理论成果：理论创新和方法突破
+      - 技术成果：技术方案和工具开发
+      - 应用成果：实际应用和示范验证
+      - 学术成果：论文发表和学术影响
+      
+      3. 学术价值和应用前景
+      - 对学科发展的贡献
+      - 理论价值和科学意义
+      - 应用价值和社会效益
+      - 产业化前景分析
+      
+      4. 对学科发展的推动作用
+      - 对相关学科理论的丰富
+      - 对研究方法的贡献
+      - 对应用领域的推进
+    elicit: true
+    data_source: "project_goals_and_trends"
+
+# 内容生成策略配置
+generation_strategy:
+  立项依据:
+    primary_source: "literature_knowledge_base"
+    focus_areas: ["国内外现状", "研究空白", "研究意义"]
+    writing_style: "客观分析，逻辑严密，有理有据"
+    
+  研究内容:
+    primary_source: "user_research_idea + literature_gaps"
+    focus_areas: ["具体目标", "关键问题", "技术挑战"]
+    writing_style: "目标明确，层次清晰，可操作性强"
+    
+  研究方案:
+    primary_source: "specialist_technical_recommendations"
+    focus_areas: ["技术路线", "创新方法", "实施可行性"]
+    writing_style: "技术严谨，方案具体，逻辑完整"
+    
+  预期成果:
+    primary_source: "project_objectives + domain_trends"
+    focus_areas: ["成果形式", "学术价值", "应用前景"]
+    writing_style: "前瞻性强，价值明确，切实可行"
+
+# 质量控制标准
+quality_standards:
+  - 内容与标题完全匹配
+  - 逻辑结构清晰完整
+  - 学术表达规范准确
+  - 创新性表述突出
+  - 可行性分析客观
+  - 字数控制在合理范围
+  - 避免过度承诺

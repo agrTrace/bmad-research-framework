@@ -1,0 +1,8 @@
+node_modules/
+tools/installer/node_modules/
+.npm/
+npm-debug.log*
+.DS_Store
+desktop/electron/dist/
+desktop/electron/out/
+dist/

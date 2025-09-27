@@ -1,0 +1,27 @@
+{
+  "name": "bmad-research-desktop",
+  "version": "1.0.0",
+  "description": "Electron 桌面版 BMAD 研究框架，提供离线浏览与项目规划能力。",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:dev": "ELECTRON_ENABLE_LOGGING=true electron .",
+    "package": "electron-builder"
+  },
+  "dependencies": {
+    "electron-store": "^9.0.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.2",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "org.bmad.research.desktop",
+    "productName": "BMAD Research Desktop",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*"
+    ]
+  }
+}

@@ -1,6 +1,10 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
+const BUILTIN_FALLBACKS = {
+  'js-yaml': path.join(__dirname, '..', '..', 'vendor', 'js-yaml.js'),
+};
+
 function resolveDependency(moduleName, rootDir, additionalSearchPaths = []) {
   const searchPaths = [];
   const push = (value) => {
@@ -47,6 +51,18 @@ function resolveDependency(moduleName, rootDir, additionalSearchPaths = []) {
       if (error && error.code === 'MODULE_NOT_FOUND') {
         lastError = error;
         continue;
+      }
+      lastError = error;
+    }
+  }
+
+  if (BUILTIN_FALLBACKS[moduleName]) {
+    const attemptedPath = BUILTIN_FALLBACKS[moduleName];
+    try {
+      return require(attemptedPath);
+    } catch (error) {
+      if (error) {
+        error.message = `${error.message}\nAttempted builtin fallback at ${attemptedPath}`;
       }
       lastError = error;
     }

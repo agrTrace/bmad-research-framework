@@ -42,6 +42,10 @@
         "to": "services/saas/src/utils"
       },
       {
+        "from": "../services/saas/vendor",
+        "to": "services/saas/vendor"
+      },
+      {
         "from": "../tools/lib",
         "to": "tools/lib",
         "filter": [

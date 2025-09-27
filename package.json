@@ -27,15 +27,23 @@
   "scripts": {
     "build": "node tools/cli.js build",
     "validate": "node tools/cli.js validate",
-    "install:framework": "node tools/installer/bin/bmad.js install --expansion-packs bmad-research-framework"
+    "test": "npm run build && npm run validate",
+    "install:framework": "node tools/installer/bin/bmad.js install --expansion-packs bmad-research-framework",
+    "start:saas": "node services/saas/src/server.js",
+    "start:desktop": "npm --prefix desktop/electron start",
+    "start:desktop:dev": "npm --prefix desktop/electron run start:dev"
   },
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^14.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
     "fs-extra": "^11.3.1",
     "glob": "^11.0.3",
     "inquirer": "^8.2.6",
     "js-yaml": "^4.1.0",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
     "ora": "^5.4.1"
   },
   "engines": {

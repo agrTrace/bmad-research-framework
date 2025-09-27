@@ -1,128 +1,257 @@
 const path = require('node:path');
-const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron');
-
-// You must require or define your "store" utility here
-// Replace with your actual persistent store implementation
+const { app, BrowserWindow, ipcMain, nativeTheme, screen } = require('electron');
 const Store = require('electron-store');
-const store = new Store();
 
+// 初始化配置存储
+const store = new Store({
+  defaults: {
+    theme: 'system',
+    windowState: {
+      width: 1260,
+      height: 840
+    }
+  }
+});
+
+// 服务初始化
 const createCatalogService = require(path.join(__dirname, '..', '..', 'services', 'saas', 'src', 'services', 'catalog-service'));
 const createProjectService = require(path.join(__dirname, '..', '..', 'services', 'saas', 'src', 'services', 'project-service'));
 
 const rootDir = path.resolve(__dirname, '..', '..');
-const catalogService = createCatalogService({ rootDir });
-const projectService = createProjectService({ rootDir, catalogService });
+let catalogService;
+let projectService;
+let mainWindow = null;
 let handlersRegistered = false;
 
+// 初始化服务
+function initializeServices() {
+  try {
+    catalogService = createCatalogService({ rootDir });
+    projectService = createProjectService({ rootDir, catalogService });
+  } catch (error) {
+    console.error('Failed to initialize services:', error);
+    throw error;
+  }
+}
+
+// 注册IPC处理程序
 async function registerHandlers() {
   if (handlersRegistered) return;
-  handlersRegistered = true;
+  
+  try {
+    // 主题相关处理
+    nativeTheme.themeSource = store.get('theme');
 
-  nativeTheme.themeSource = store.get('theme', 'system');
+    ipcMain.handle('preferences:get', () => ({
+      theme: store.get('theme'),
+    }));
 
-  ipcMain.handle('preferences:get', () => {
-    return {
-      theme: store.get('theme', 'system'),
-    };
-  });
+    ipcMain.handle('preferences:set-theme', (_event, theme) => {
+      if (!['light', 'dark', 'system'].includes(theme)) {
+        throw new Error('Invalid theme value');
+      }
+      store.set('theme', theme);
+      nativeTheme.themeSource = theme;
+    });
 
-  ipcMain.handle('preferences:set-theme', (_event, theme) => {
-    if (!['light', 'dark', 'system'].includes(theme)) return;
-    store.set('theme', theme);
-    nativeTheme.themeSource = theme;
-  });
+    // 目录服务相关处理
+    ipcMain.handle('catalog:overview', async () => {
+      try {
+        const [agents, teams, workflows, expansions] = await Promise.all([
+          catalogService.listAgents(),
+          catalogService.listTeams(),
+          catalogService.listWorkflows(),
+          catalogService.listExpansions(),
+        ]);
 
-  ipcMain.handle('catalog:overview', async () => {
-    const [agents, teams, workflows, expansions] = await Promise.all([
-      catalogService.listAgents(),
-      catalogService.listTeams(),
-      catalogService.listWorkflows(),
-      catalogService.listExpansions(),
-    ]);
+        return {
+          agentCount: agents.length,
+          teamCount: teams.length,
+          workflowCount: workflows.length,
+          agents,
+          teams,
+          workflows,
+          expansions,
+          sources: [
+            { 
+              type: 'core', 
+              source: 'core', 
+              name: '核心能力', 
+              version: process.env.CORE_VERSION || '1.0.0'
+            },
+            ...expansions.map(pack => ({
+              type: 'expansion',
+              source: `expansion:${pack.id}`,
+              packId: pack.id,
+              name: pack.name,
+              version: pack.version,
+              description: pack.description,
+            })),
+          ],
+        };
+      } catch (error) {
+        console.error('Error in catalog:overview:', error);
+        throw new Error('Failed to fetch catalog overview');
+      }
+    });
 
-    return {
-      agentCount: agents.length,
-      teamCount: teams.length,
-      workflowCount: workflows.length,
-      agents,
-      teams,
-      workflows,
-      expansions,
-      sources: [
-        { type: 'core', source: 'core', name: '核心能力', version: null },
-        ...expansions.map((pack) => ({
-          type: 'expansion',
-          source: `expansion:${pack.id}`,
-          packId: pack.id,
-          name: pack.name,
-          version: pack.version,
-          description: pack.description,
-        })),
-      ],
-    };
-  });
+    ipcMain.handle('catalog:agent-detail', async (_event, agentId) => {
+      if (!agentId) throw new Error('Agent ID is required');
+      try {
+        return await catalogService.getAgent(agentId);
+      } catch (error) {
+        console.error(`Error fetching agent detail for ${agentId}:`, error);
+        throw new Error('Failed to fetch agent details');
+      }
+    });
 
-  ipcMain.handle('catalog:agent-detail', async (_event, agentId) => {
-    return catalogService.getAgent(agentId);
-  });
+    ipcMain.handle('projects:generate-plan', async (_event, payload) => {
+      if (!payload) throw new Error('Payload is required for plan generation');
+      try {
+        return await projectService.createProjectPlan(payload);
+      } catch (error) {
+        console.error('Error generating project plan:', error);
+        throw new Error('Failed to generate project plan');
+      }
+    });
 
-  ipcMain.handle('projects:generate-plan', async (_event, payload) => {
-    return projectService.createProjectPlan(payload);
-  });
+    ipcMain.handle('projects:list-workflows', async () => {
+      try {
+        return await catalogService.listWorkflows();
+      } catch (error) {
+        console.error('Error listing workflows:', error);
+        throw new Error('Failed to list workflows');
+      }
+    });
 
-  ipcMain.handle('projects:list-workflows', async () => {
-    return catalogService.listWorkflows();
-  });
+    ipcMain.handle('catalog:list-expansions', async () => {
+      try {
+        return await catalogService.listExpansions();
+      } catch (error) {
+        console.error('Error listing expansions:', error);
+        throw new Error('Failed to list expansions');
+      }
+    });
 
-  ipcMain.handle('catalog:list-expansions', async () => {
-    return catalogService.listExpansions();
-  });
-}
-
-async function createWindow() {
-  const windowState = store.get('windowState', { width: 1260, height: 840 });
-
-  const win = new BrowserWindow({
-    width: windowState.width,
-    height: windowState.height,
-    minWidth: 960,
-    minHeight: 640,
-    title: 'BMAD Research Framework — Desktop',
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-
-  if (windowState.x !== undefined && windowState.y !== undefined) {
-    win.setBounds({ ...win.getBounds(), x: windowState.x, y: windowState.y });
+    handlersRegistered = true;
+  } catch (error) {
+    console.error('Failed to register handlers:', error);
+    throw error;
   }
-
-  win.on('close', () => {
-    const bounds = win.getBounds();
-    store.set('windowState', bounds);
-  });
-
-  await win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-  return win;
 }
 
-app.whenReady().then(async () => {
-  await registerHandlers();
-  await createWindow();
+// 创建主窗口
+async function createWindow() {
+  try {
+    const windowState = store.get('windowState');
+    const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
 
-  app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      await createWindow();
+    // 确保窗口尺寸不超过屏幕大小
+    const width = Math.min(windowState.width, screenWidth);
+    const height = Math.min(windowState.height, screenHeight);
+
+    mainWindow = new BrowserWindow({
+      width,
+      height,
+      minWidth: 960,
+      minHeight: 640,
+      title: 'BMAD Research Framework — Desktop',
+      autoHideMenuBar: true,
+      show: false, // 初始化完成前不显示
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        spellcheck: false, // 禁用拼写检查以提升性能
+      },
+    });
+
+    // 处理窗口位置
+    if (windowState.x !== undefined && windowState.y !== undefined) {
+      // 确保窗口位置在可视区域内
+      const { x, y } = windowState;
+      if (x >= 0 && x <= screenWidth && y >= 0 && y <= screenHeight) {
+        mainWindow.setBounds({ ...mainWindow.getBounds(), x, y });
+      }
+    } else {
+      mainWindow.center();
     }
-  });
+
+    // 保存窗口状态
+    const saveWindowState = () => {
+      if (!mainWindow.isMaximized()) {
+        store.set('windowState', mainWindow.getBounds());
+      }
+    };
+
+    // 节流保存窗口状态
+    let saveTimeout;
+    mainWindow.on('resize', () => {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveWindowState, 500);
+    });
+
+    mainWindow.on('move', () => {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveWindowState, 500);
+    });
+
+    mainWindow.on('close', saveWindowState);
+
+    // 加载页面
+    await mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+    
+    // 页面加载完成后显示窗口
+    mainWindow.show();
+    
+    return mainWindow;
+  } catch (error) {
+    console.error('Error creating window:', error);
+    throw error;
+  }
+}
+
+// 应用程序生命周期管理
+app.whenReady().then(async () => {
+  try {
+    initializeServices();
+    await registerHandlers();
+    await createWindow();
+
+    // macOS 应用程序激活处理
+    app.on('activate', async () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        await createWindow();
+      }
+    });
+
+  } catch (error) {
+    console.error('Application initialization failed:', error);
+    app.quit();
+  }
 });
 
+// 窗口关闭处理
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// 优雅退出
+app.on('before-quit', () => {
+  if (mainWindow) {
+    mainWindow.removeAllListeners('close');
+    mainWindow = null;
+  }
+});
+
+// 未捕获的异常处理
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
 });

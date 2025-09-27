@@ -140,6 +140,7 @@ function renderWorkflows(workflowsList) {
   workflowsList.forEach((workflow) => {
     const option = document.createElement('option');
     option.value = workflow.id;
+
     const phaseCount = Array.isArray(workflow.phases) ? workflow.phases.length : 0;
     option.textContent = `${workflow.name}（${phaseCount} 阶段）`;
     workflowSelect.appendChild(option);
@@ -274,6 +275,7 @@ plannerForm.addEventListener('submit', async (event) => {
       expectedTeamSize: teamSizeEl.value ? Number(teamSizeEl.value) : undefined,
       workflowId: workflowSelect.value,
     };
+
     const plan = await window.bmadDesktop.generatePlan(payload);
     renderPlan(plan);
   } catch (error) {

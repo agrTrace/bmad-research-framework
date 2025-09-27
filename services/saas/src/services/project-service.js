@@ -201,6 +201,7 @@ module.exports = function createProjectService(options = {}) {
   const defaultTeamId = options.defaultTeamId || 'research-full-team';
   const defaultWorkflowId = options.defaultWorkflowId || 'universal-research-workflow';
 
+
   return {
     async createProjectPlan(payload = {}) {
       const projectName = (payload.projectName || payload.name || '未命名科研项目').trim();
@@ -217,19 +218,6 @@ module.exports = function createProjectService(options = {}) {
       const profile = selectProfile(researchType);
 
       const expansions = await catalogService.listExpansions();
-      const expansionPack =
-        expansions.find((pack) => pack.id === defaultPackId) || expansions[0];
-
-      if (!expansionPack) {
-        const error = new Error('未找到科研框架扩展包，请先安装扩展包后再使用SaaS服务。');
-        error.status = 500;
-        throw error;
-      }
-
-      const [team, workflow] = await Promise.all([
-        catalogService.getTeam(defaultTeamId, `expansion:${expansionPack.id}`),
-        catalogService.getWorkflow(defaultWorkflowId, `expansion:${expansionPack.id}`),
-      ]);
 
       if (!team) {
         const error = new Error('未找到科研团队配置文件，无法生成项目方案。');
@@ -264,10 +252,6 @@ module.exports = function createProjectService(options = {}) {
       }
 
       const agentDetails = [];
-      for (const agentId of agentIds) {
-        let detail = await catalogService.getAgent(agentId, `expansion:${expansionPack.id}`);
-        if (!detail) {
-          detail = await catalogService.getAgent(agentId, 'core');
         }
         if (detail) {
           agentDetails.push({
@@ -344,14 +328,6 @@ module.exports = function createProjectService(options = {}) {
           agents: agentDetails,
         },
         knowledgeSupport: {
-          expansionPack: {
-            id: expansionPack.id,
-            name: expansionPack.name,
-            description: expansionPack.description,
-          },
-          recommendedTemplates: expansionPack.templates || [],
-          recommendedWorkflows: expansionPack.workflows || [],
-          recommendedAgents: expansionPack.agents || [],
           knowledgeFocus: profile.knowledgeFocus,
         },
         nextActions: [

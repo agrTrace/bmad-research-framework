@@ -16,7 +16,7 @@ cd desktop/electron
 npm install
 ```
 
-> ⚠️ 在封闭网络环境下安装 Electron 可能失败，可参考 `INSTALL.md` 中的离线安装指引或使用本地镜像源。
+
 
 ## 开发与调试
 

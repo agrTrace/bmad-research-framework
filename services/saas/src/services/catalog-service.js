@@ -1,12 +1,94 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const yaml = require('js-yaml');
+
+const BUILTIN_FALLBACKS = {
+  'js-yaml': path.join(__dirname, '..', '..', 'vendor', 'js-yaml.js'),
+};
+
+function resolveDependency(moduleName, rootDir, additionalSearchPaths = []) {
+  const searchPaths = [];
+  const push = (value) => {
+    if (!value) return;
+    searchPaths.push(value);
+  };
+
+  push(__dirname);
+  if (rootDir) {
+    push(rootDir);
+    push(path.join(rootDir, 'desktop', 'electron'));
+    push(path.join(rootDir, 'services', 'saas'));
+  }
+
+  const cwd = process.cwd();
+  if (cwd) {
+    push(cwd);
+  }
+
+  if (Array.isArray(additionalSearchPaths)) {
+    for (const item of additionalSearchPaths) {
+      push(item);
+    }
+  }
+
+  if (process.resourcesPath) {
+    push(process.resourcesPath);
+    push(path.join(process.resourcesPath, 'app'));
+    push(path.join(process.resourcesPath, 'app.asar'));
+  }
+
+  const visited = new Set();
+  let lastError;
+
+  for (const candidate of searchPaths) {
+    const normalisedCandidate = path.normalize(candidate);
+    if (visited.has(normalisedCandidate)) continue;
+    visited.add(normalisedCandidate);
+
+    try {
+      const resolvedPath = require.resolve(moduleName, { paths: [normalisedCandidate] });
+      return require(resolvedPath);
+    } catch (error) {
+      if (error && error.code === 'MODULE_NOT_FOUND') {
+        lastError = error;
+        continue;
+      }
+      lastError = error;
+    }
+  }
+
+  if (BUILTIN_FALLBACKS[moduleName]) {
+    const attemptedPath = BUILTIN_FALLBACKS[moduleName];
+    try {
+      return require(attemptedPath);
+    } catch (error) {
+      if (error) {
+        error.message = `${error.message}\nAttempted builtin fallback at ${attemptedPath}`;
+      }
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    if (lastError.code === 'MODULE_NOT_FOUND') {
+      lastError.message = `${lastError.message}\nTried search paths: ${Array.from(visited).join(', ')}`;
+    }
+    throw lastError;
+  }
+
+  const fallbackError = new Error(`Cannot find module '${moduleName}'`);
+  fallbackError.code = 'MODULE_NOT_FOUND';
+  throw fallbackError;
+}
 
 const { extractYamlFromAgent } = require('../../../../tools/lib/yaml-utils');
 const { toCamelCase, sortByLocale } = require('../utils/object-utils');
 
 module.exports = function createCatalogService(options = {}) {
   const rootDir = options.rootDir || path.resolve(__dirname, '../../../..');
+  const dependencySearchPaths = Array.isArray(options.dependencySearchPaths)
+    ? options.dependencySearchPaths
+    : [];
+  const yaml = resolveDependency('js-yaml', rootDir, dependencySearchPaths);
   const coreDir = path.join(rootDir, 'bmad-core');
   const expansionsDir = path.join(rootDir, 'expansion-packs');
 

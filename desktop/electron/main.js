@@ -15,18 +15,21 @@
  *     npm install js-yaml
  */
 
+const fs = require('node:fs');
 const path = require('node:path');
+const Module = require('node:module');
 const { app, BrowserWindow, ipcMain, nativeTheme, screen, dialog } = require('electron');
 
 let Store; // 将通过 dynamic import 导入 electron-store（兼容 ESM 包）
 let store;
 
-const rootDir = path.resolve(__dirname, '..', '..');
+let rootDir = path.resolve(__dirname, '..', '..');
 
 let catalogService = null;
 let projectService = null;
 let servicesAvailable = true;
 let servicesUnavailableReason = null;
+let moduleSearchPaths = [];
 
 let mainWindow = null;
 let handlersRegistered = false;
@@ -48,13 +51,17 @@ Example: npm install ${modulesList}
  *   并保留错误信息供 UI/IPC 使用。
  */
 function initializeServices() {
+  servicesAvailable = true;
+  servicesUnavailableReason = null;
+  catalogService = null;
+  projectService = null;
   const missing = [];
 
   try {
     // 尝试加载 catalog service factory
     const createCatalogService = require(path.join(rootDir, 'services', 'saas', 'src', 'services', 'catalog-service'));
     try {
-      catalogService = createCatalogService({ rootDir });
+      catalogService = createCatalogService({ rootDir, dependencySearchPaths: moduleSearchPaths });
     } catch (err) {
       // 如果工厂函数执行时内部依赖缺失，也要捕获
       if (err && err.code === 'MODULE_NOT_FOUND') {
@@ -78,7 +85,7 @@ function initializeServices() {
     // 尝试加载 project service factory
     const createProjectService = require(path.join(rootDir, 'services', 'saas', 'src', 'services', 'project-service'));
     try {
-      projectService = createProjectService({ rootDir, catalogService });
+      projectService = createProjectService({ rootDir, catalogService, dependencySearchPaths: moduleSearchPaths });
     } catch (err) {
       if (err && err.code === 'MODULE_NOT_FOUND') {
         const m = (err.message || '').match(/Cannot find module '([^']+)'/);
@@ -104,6 +111,95 @@ function initializeServices() {
     if (!catalogService) catalogService = null;
     if (!projectService) projectService = null;
   }
+}
+
+function resolveRootDir() {
+  if (app.isPackaged) {
+    return process.resourcesPath;
+  }
+  return path.resolve(__dirname, '..', '..');
+}
+
+function computeModuleSearchPaths(baseDir) {
+  const candidates = new Set();
+  const push = (value) => {
+    if (!value) return;
+    candidates.add(path.normalize(value));
+  };
+
+  push(path.join(__dirname, 'node_modules'));
+  push(path.join(__dirname, '..', 'node_modules'));
+  push(path.join(__dirname, '..', '..', 'node_modules'));
+
+  if (baseDir) {
+    push(path.join(baseDir, 'node_modules'));
+    push(path.join(baseDir, 'desktop', 'electron', 'node_modules'));
+    push(path.join(baseDir, 'services', 'saas', 'node_modules'));
+  }
+
+  const cwd = process.cwd();
+  if (cwd) {
+    push(path.join(cwd, 'node_modules'));
+  }
+
+  if (typeof app?.getAppPath === 'function') {
+    const appPath = app.getAppPath();
+    push(appPath);
+    push(path.dirname(appPath));
+    push(path.join(appPath, 'node_modules'));
+  }
+
+  if (process.resourcesPath) {
+    push(process.resourcesPath);
+    push(path.join(process.resourcesPath, 'app'));
+    push(path.join(process.resourcesPath, 'app.asar'));
+    push(path.join(process.resourcesPath, 'node_modules'));
+    push(path.join(process.resourcesPath, 'app.asar', 'node_modules'));
+  }
+
+  return Array.from(candidates);
+}
+
+function ensureModuleSearchPaths(searchPaths) {
+  if (!Array.isArray(searchPaths) || searchPaths.length === 0) {
+    return process.env.NODE_PATH ? process.env.NODE_PATH.split(path.delimiter).filter(Boolean) : [];
+  }
+
+  const existing = process.env.NODE_PATH
+    ? process.env.NODE_PATH.split(path.delimiter).filter(Boolean)
+    : [];
+
+  const normalisedExisting = existing.map((item) => path.normalize(item));
+  let updated = false;
+
+  for (const candidate of searchPaths) {
+    const normalisedCandidate = path.normalize(candidate);
+    if (normalisedExisting.includes(normalisedCandidate)) {
+      continue;
+    }
+
+    let candidateExists = false;
+    try {
+      candidateExists = fs.existsSync(candidate);
+    } catch (_) {
+      candidateExists = false;
+    }
+
+    if (!candidateExists && !candidate.includes('.asar')) {
+      continue;
+    }
+
+    existing.push(candidate);
+    normalisedExisting.push(normalisedCandidate);
+    updated = true;
+  }
+
+  if (updated) {
+    process.env.NODE_PATH = existing.join(path.delimiter);
+    Module._initPaths();
+  }
+
+  return existing;
 }
 
 /**
@@ -347,6 +443,10 @@ app.whenReady().then(async () => {
         }
       }
     });
+
+    rootDir = resolveRootDir();
+
+    moduleSearchPaths = ensureModuleSearchPaths(computeModuleSearchPaths(rootDir));
 
     // 初始化服务（捕获依赖缺失）
     initializeServices();

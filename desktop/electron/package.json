@@ -9,7 +9,8 @@
     "package": "electron-builder"
   },
   "dependencies": {
-    "electron-store": "^9.0.0"
+    "electron-store": "^9.0.0",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "electron": "^31.0.2",
@@ -22,6 +23,35 @@
       "main.js",
       "preload.js",
       "renderer/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../bmad-core",
+        "to": "bmad-core"
+      },
+      {
+        "from": "../expansion-packs",
+        "to": "expansion-packs"
+      },
+      {
+        "from": "../services/saas/src/services",
+        "to": "services/saas/src/services"
+      },
+      {
+        "from": "../services/saas/src/utils",
+        "to": "services/saas/src/utils"
+      },
+      {
+        "from": "../services/saas/vendor",
+        "to": "services/saas/vendor"
+      },
+      {
+        "from": "../tools/lib",
+        "to": "tools/lib",
+        "filter": [
+          "yaml-utils.js"
+        ]
+      }
     ]
   }
 }

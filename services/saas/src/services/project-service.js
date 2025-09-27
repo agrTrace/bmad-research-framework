@@ -140,14 +140,16 @@ function chooseTeamScaling(teamScaling = {}, requestedSize, preferredKey) {
 }
 
 function buildPhasePlan(workflow, profile) {
-  const stepsByPhase = workflow.steps.reduce((acc, step) => {
+  const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
+  const phases = Array.isArray(workflow.phases) ? workflow.phases : [];
+  const stepsByPhase = steps.reduce((acc, step) => {
     const key = step.phase;
     if (!acc.has(key)) acc.set(key, []);
     acc.get(key).push(step);
     return acc;
   }, new Map());
 
-  return workflow.phases.map((phase) => {
+  return phases.map((phase) => {
     const phaseSteps = stepsByPhase.get(phase.id) || [];
     const emphasis = profile.emphasis?.[phase.id] || profile.emphasis?.[phase.name];
     return {
@@ -161,7 +163,8 @@ function buildPhasePlan(workflow, profile) {
 
 function gatherDeliverables(workflow) {
   const deliverables = [];
-  for (const step of workflow.steps) {
+  const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
+  for (const step of steps) {
     if (!Array.isArray(step.outputs) || !step.outputs.length) continue;
     for (const output of step.outputs) {
       deliverables.push({
@@ -177,7 +180,8 @@ function gatherDeliverables(workflow) {
 }
 
 function gatherInteractionPoints(workflow) {
-  return workflow.steps
+  const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
+  return steps
     .filter((step) => step.interactionRequired)
     .map((step) => ({
       phase: step.phase,
@@ -197,11 +201,148 @@ function parseAgentReference(reference) {
 
 module.exports = function createProjectService(options = {}) {
   const rootDir = options.rootDir || path.resolve(__dirname, '../../../..');
-  const catalogService = options.catalogService || createCatalogService({ rootDir });
+  const dependencySearchPaths = Array.isArray(options.dependencySearchPaths)
+    ? options.dependencySearchPaths
+    : [];
+  const catalogService =
+    options.catalogService || createCatalogService({ rootDir, dependencySearchPaths });
   const defaultPackId = options.defaultPackId || 'bmad-research-framework';
   const defaultTeamId = options.defaultTeamId || 'research-full-team';
   const defaultWorkflowId = options.defaultWorkflowId || 'universal-research-workflow';
 
+  const normalisePackId = (value) => {
+    if (!value || typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.toLowerCase() === 'core') return null;
+    if (trimmed.startsWith('expansion:')) {
+      const [, packId] = trimmed.split(':');
+      return packId || null;
+    }
+    return trimmed;
+  };
+
+  const resolvePack = (expansions, requestedId) => {
+    if (!Array.isArray(expansions) || !expansions.length) return null;
+    if (requestedId) {
+      const found = expansions.find((pack) => pack.id === requestedId);
+      if (found) return found;
+    }
+    const fallback = expansions.find((pack) => pack.id === defaultPackId);
+    if (fallback) return fallback;
+    return expansions[0] || null;
+  };
+
+  const resolveTeam = async ({ requestedId, fallbackId, preferredSource }) => {
+    const idsToTry = [requestedId, fallbackId].filter(Boolean);
+    const sourcesToTry = [];
+    if (preferredSource) sourcesToTry.push(preferredSource);
+    sourcesToTry.push(undefined);
+
+    const seen = new Set();
+
+    const tryLoad = async (id, source, summaryMeta = null) => {
+      if (!id) return null;
+      const key = `${source || 'any'}|${id}`;
+      if (seen.has(key)) return null;
+      seen.add(key);
+      try {
+        const detail = await catalogService.getTeam(id, source);
+        if (detail) {
+          return { detail, summary: summaryMeta };
+        }
+      } catch (error) {
+        console.warn('Failed to load team definition', id, source, error);
+      }
+      return null;
+    };
+
+    for (const id of idsToTry) {
+      for (const source of sourcesToTry) {
+        const result = await tryLoad(id, source);
+        if (result) return result;
+      }
+    }
+
+    const summaryLists = [];
+    if (preferredSource) {
+      try {
+        summaryLists.push(await catalogService.listTeams({ source: preferredSource }));
+      } catch (error) {
+        console.warn('Failed to list teams for preferred source', preferredSource, error);
+      }
+    }
+    try {
+      summaryLists.push(await catalogService.listTeams());
+    } catch (error) {
+      console.warn('Failed to list available teams', error);
+    }
+
+    for (const summaries of summaryLists) {
+      if (!Array.isArray(summaries)) continue;
+      for (const summary of summaries) {
+        const result = await tryLoad(summary.id, summary.source, summary);
+        if (result) return result;
+      }
+    }
+
+    return { detail: null, summary: null };
+  };
+
+  const resolveWorkflow = async ({ requestedId, fallbackId, preferredSource }) => {
+    const idsToTry = [requestedId, fallbackId].filter(Boolean);
+    const sourcesToTry = [];
+    if (preferredSource) sourcesToTry.push(preferredSource);
+    sourcesToTry.push(undefined);
+
+    const seen = new Set();
+
+    const tryLoad = async (id, source, summaryMeta = null) => {
+      if (!id) return null;
+      const key = `${source || 'any'}|${id}`;
+      if (seen.has(key)) return null;
+      seen.add(key);
+      try {
+        const detail = await catalogService.getWorkflow(id, source);
+        if (detail) {
+          return { detail, summary: summaryMeta };
+        }
+      } catch (error) {
+        console.warn('Failed to load workflow definition', id, source, error);
+      }
+      return null;
+    };
+
+    for (const id of idsToTry) {
+      for (const source of sourcesToTry) {
+        const result = await tryLoad(id, source);
+        if (result) return result;
+      }
+    }
+
+    const summaryLists = [];
+    if (preferredSource) {
+      try {
+        summaryLists.push(await catalogService.listWorkflows({ source: preferredSource }));
+      } catch (error) {
+        console.warn('Failed to list workflows for preferred source', preferredSource, error);
+      }
+    }
+    try {
+      summaryLists.push(await catalogService.listWorkflows());
+    } catch (error) {
+      console.warn('Failed to list available workflows', error);
+    }
+
+    for (const summaries of summaryLists) {
+      if (!Array.isArray(summaries)) continue;
+      for (const summary of summaries) {
+        const result = await tryLoad(summary.id, summary.source, summary);
+        if (result) return result;
+      }
+    }
+
+    return { detail: null, summary: null };
+  };
 
   return {
     async createProjectPlan(payload = {}) {
@@ -218,14 +359,50 @@ module.exports = function createProjectService(options = {}) {
 
       const profile = selectProfile(researchType);
 
-      const expansions = await catalogService.listExpansions();
+      let expansions = [];
+      try {
+        expansions = await catalogService.listExpansions();
+      } catch (error) {
+        console.warn('Failed to list expansion packs, continuing with defaults', error);
+      }
 
+      const requestedPackId = normalisePackId(
+        payload.expansionPackId ||
+          payload.packId ||
+          payload.pack ||
+          payload.expansionPack ||
+          (typeof payload.source === 'string' ? payload.source : null) ||
+          (payload.source && typeof payload.source === 'object' ? payload.source.packId : null),
+      );
+      const selectedPack = resolvePack(expansions, requestedPackId);
+      const preferredSource =
+        payload.source === 'core'
+          ? 'core'
+          : selectedPack
+          ? `expansion:${selectedPack.id}`
+          : null;
+
+      const teamSource = payload.teamSource || preferredSource;
+      const workflowSource = payload.workflowSource || preferredSource;
+
+      const { detail: team, summary: teamSummary } = await resolveTeam({
+        requestedId: payload.teamId || payload.team || payload.preferredTeamId || defaultTeamId,
+        fallbackId: defaultTeamId,
+        preferredSource: teamSource,
+      });
 
       if (!team) {
         const error = new Error('未找到科研团队配置文件，无法生成项目方案。');
         error.status = 500;
         throw error;
       }
+
+      const { detail: workflow, summary: workflowSummary } = await resolveWorkflow({
+        requestedId: payload.workflowId || payload.workflow || payload.preferredWorkflowId || defaultWorkflowId,
+        fallbackId: defaultWorkflowId,
+        preferredSource: workflowSource,
+      });
+
       if (!workflow) {
         const error = new Error('未找到科研工作流定义，无法生成项目方案。');
         error.status = 500;
@@ -235,13 +412,20 @@ module.exports = function createProjectService(options = {}) {
       const phasePlan = buildPhasePlan(workflow, profile);
       const deliverables = gatherDeliverables(workflow);
       const interactionPoints = gatherInteractionPoints(workflow);
-      const scalingRecommendation = chooseTeamScaling(team.teamScaling, requestedTeamSize, profile.recommendedTeamScaling);
+      const scalingRecommendation = chooseTeamScaling(
+        team.teamScaling || {},
+        requestedTeamSize,
+        profile.recommendedTeamScaling,
+      );
 
       const agentIds = new Set();
-      for (const member of team.members) {
+      const teamMembers = Array.isArray(team.members) ? team.members : [];
+      for (const member of teamMembers) {
         if (member.agent) agentIds.add(member.agent);
       }
-      for (const step of workflow.steps) {
+
+      const workflowSteps = Array.isArray(workflow.steps) ? workflow.steps : [];
+      for (const step of workflowSteps) {
         if (step.agent && step.agent !== 'human-user') {
           agentIds.add(step.agent);
         }
@@ -254,32 +438,45 @@ module.exports = function createProjectService(options = {}) {
       }
 
       const agentDetails = [];
+      const agentLookups = await Promise.all(
+        Array.from(agentIds).map(async (agentId) => {
+          try {
+            return await catalogService.getAgent(agentId);
+          } catch (error) {
+            console.warn('Failed to load agent detail', agentId, error);
+            return null;
+          }
+        }),
+      );
 
-        }
-        if (detail) {
-          agentDetails.push({
-            id: detail.id,
-            name: detail.name,
-            title: detail.title,
-            role: detail.role,
-            focus: detail.focus,
-            whenToUse: detail.whenToUse,
-            source: detail.source,
-            expansionPack: detail.expansionPack,
-            corePrinciples: detail.corePrinciples,
-            commandExamples: detail.commands.slice(0, 3),
-            dependencySummary: detail.dependencySummary,
-          });
-        }
+      for (const detail of agentLookups) {
+        if (!detail) continue;
+        const commandExamples = Array.isArray(detail.commands) ? detail.commands.slice(0, 3) : [];
+        agentDetails.push({
+          id: detail.id,
+          name: detail.name,
+          title: detail.title,
+          role: detail.role,
+          focus: detail.focus,
+          whenToUse: detail.whenToUse,
+          source: detail.source,
+          expansionPack: detail.expansionPack,
+          corePrinciples: detail.corePrinciples,
+          commandExamples,
+          dependencySummary: detail.dependencySummary,
+        });
       }
 
-      const initializationSteps = extractInitializationSteps(team.setupGuide);
+      const initializationSteps = extractInitializationSteps(team.setupGuide || {});
       const runtimePractices = Array.isArray(team.setupGuide?.runtime_management)
         ? team.setupGuide.runtime_management
         : [];
       const successMetrics = Array.isArray(team.setupGuide?.success_metrics)
         ? team.setupGuide.success_metrics
         : profile.metrics;
+
+      const teamSourceInfo = teamSummary?.source || teamSource || null;
+      const workflowSourceInfo = workflowSummary?.source || workflowSource || null;
 
       return {
         project: {
@@ -303,7 +500,7 @@ module.exports = function createProjectService(options = {}) {
           domain: team.domain,
           useCase: team.useCase,
           hierarchy: team.hierarchy,
-          members: team.members,
+          members: teamMembers,
           collaborationPatterns: team.collaborationPatterns,
           teamScaling: team.teamScaling,
           scalingRecommendation,
@@ -312,6 +509,8 @@ module.exports = function createProjectService(options = {}) {
           initializationSteps,
           runtimePractices,
           successMetrics,
+          source: teamSourceInfo,
+          expansionPack: team.expansionPack || teamSummary?.expansionPack || selectedPack?.id || null,
         },
         workflowPlan: {
           id: workflow.id,
@@ -319,23 +518,27 @@ module.exports = function createProjectService(options = {}) {
           description: workflow.description,
           metadata: workflow.metadata,
           phases: phasePlan,
-          steps: workflow.steps,
+          steps: workflowSteps,
           deliverables,
           interactionPoints,
           qualityGates: workflow.qualityGates,
           riskManagement: workflow.riskManagement,
           successCriteria: workflow.successCriteria,
+          source: workflowSourceInfo,
+          expansionPack: workflow.expansionPack || workflowSummary?.expansionPack || selectedPack?.id || null,
         },
         agentInsights: {
           totalAgents: agentDetails.length,
           agents: agentDetails,
         },
         knowledgeSupport: {
-
           knowledgeFocus: profile.knowledgeFocus,
+          expansionPack: selectedPack
+            ? { id: selectedPack.id, name: selectedPack.name, version: selectedPack.version }
+            : null,
         },
         nextActions: [
-          `启动 ${team.members[0]?.agent || 'research-strategy-planner'}，完成项目战略规划。`,
+          `启动 ${teamMembers[0]?.agent || 'research-strategy-planner'}，完成项目战略规划。`,
           initializationSteps[0] || '复盘自动配置结果并确认团队角色分工。',
           '同步知识管理团队，建立初始文献与知识库结构。',
         ],

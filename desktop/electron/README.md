@@ -16,11 +16,7 @@ cd desktop/electron
 npm install
 ```
 
-仓库在本目录提供了 `.npmrc`，默认将 Electron 及 electron-builder 的二进制下载指向 `https://npmmirror.com/` 镜像，可大幅降低国内 / 受限网络环境下的安装失败率。如果仍遇到 `ECONNRESET` 或权限报错，可尝试：
 
-- 删除残留的 `node_modules/` 并重新执行 `npm install`；
-- 手动设置 `ELECTRON_MIRROR` 或 `npm config set electron_mirror <mirror-url>` 覆盖镜像地址；
-- 在 Windows 上使用管理员权限或将仓库放置到非受限目录后重试。
 
 ## 开发与调试
 

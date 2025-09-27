@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BMAD Research Framework 桌面版</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="branding">
+        <h1>BMAD Research Framework</h1>
+        <p class="subtitle">桌面版 · 离线科研协同控制台</p>
+      </div>
+      <div class="toolbar">
+        <label for="theme-select">主题：</label>
+        <select id="theme-select">
+          <option value="system">跟随系统</option>
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel catalog-panel">
+        <h2>Agent 与团队目录</h2>
+        <div class="catalog-summary">
+          <div>
+            <span class="summary-value" id="agent-count">0</span>
+            <span class="summary-label">智能体</span>
+          </div>
+          <div>
+            <span class="summary-value" id="team-count">0</span>
+            <span class="summary-label">团队</span>
+          </div>
+          <div>
+            <span class="summary-value" id="workflow-count">0</span>
+            <span class="summary-label">工作流</span>
+          </div>
+        </div>
+        <div class="catalog-filters">
+          <label for="expansion-filter">扩展包：</label>
+          <select id="expansion-filter">
+            <option value="all">全部</option>
+          </select>
+        </div>
+        <ul id="agent-list" class="agent-list"></ul>
+      </section>
+
+      <section class="panel detail-panel">
+        <h2>智能体详情</h2>
+        <article id="agent-detail" class="detail-card">
+          <p class="placeholder">请选择左侧的智能体以查看详细信息。</p>
+        </article>
+      </section>
+
+      <section class="panel planner-panel">
+        <h2>项目规划</h2>
+        <form id="planner-form" class="planner-form">
+          <label>
+            研究主题
+            <input type="text" id="project-title" placeholder="例如：AI 在医学影像中的应用" required />
+          </label>
+          <label>
+            研究类型
+            <input type="text" id="project-type" placeholder="基础研究 / 应用研究 / 社科" />
+          </label>
+          <label>
+            研究目标
+            <textarea id="project-objectives" rows="3" placeholder="多条目标可用换行分隔"></textarea>
+          </label>
+          <label>
+            期望团队规模
+            <input type="number" id="team-size" min="1" placeholder="默认自动匹配" />
+          </label>
+          <label>
+            工作流
+            <select id="workflow-select"></select>
+          </label>
+          <button type="submit">生成项目计划</button>
+        </form>
+        <section id="plan-output" class="plan-output hidden"></section>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>BMAD Research Framework © 当前工作区</p>
+    </footer>
+
+    <script src="index.js" type="module"></script>
+  </body>
+</html>

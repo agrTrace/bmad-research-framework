@@ -23,6 +23,11 @@ research-framework install
 # 在Claude Code中激活：@research-strategy-planner
 ```
 
+## 运行方式
+
+- 🌐 **SaaS 在线服务**：`npm run start:saas` 启动 Express API，适合部署到服务器供团队协同使用。
+- 🖥️ **Electron 桌面版**：`npm run start:desktop` 启动本地独立界面，无需联网即可浏览目录并生成项目计划。
+
 ## 支持的研究类型
 
 - ✅ 国家自然科学基金申请

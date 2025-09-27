@@ -21,7 +21,7 @@ const { app, BrowserWindow, ipcMain, nativeTheme, screen, dialog } = require('el
 let Store; // 将通过 dynamic import 导入 electron-store（兼容 ESM 包）
 let store;
 
-const rootDir = path.resolve(__dirname, '..', '..');
+let rootDir = path.resolve(__dirname, '..', '..');
 
 let catalogService = null;
 let projectService = null;
@@ -48,6 +48,10 @@ Example: npm install ${modulesList}
  *   并保留错误信息供 UI/IPC 使用。
  */
 function initializeServices() {
+  servicesAvailable = true;
+  servicesUnavailableReason = null;
+  catalogService = null;
+  projectService = null;
   const missing = [];
 
   try {
@@ -104,6 +108,13 @@ function initializeServices() {
     if (!catalogService) catalogService = null;
     if (!projectService) projectService = null;
   }
+}
+
+function resolveRootDir() {
+  if (app.isPackaged) {
+    return process.resourcesPath;
+  }
+  return path.resolve(__dirname, '..', '..');
 }
 
 /**
@@ -347,6 +358,8 @@ app.whenReady().then(async () => {
         }
       }
     });
+
+    rootDir = resolveRootDir();
 
     // 初始化服务（捕获依赖缺失）
     initializeServices();

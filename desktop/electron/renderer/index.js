@@ -140,12 +140,7 @@ function renderWorkflows(workflowsList) {
   workflowsList.forEach((workflow) => {
     const option = document.createElement('option');
     option.value = workflow.id;
-    if (workflow.source) {
-      option.dataset.source = workflow.source;
-    }
-    if (workflow.expansionPack) {
-      option.dataset.packId = workflow.expansionPack;
-    }
+
     const phaseCount = Array.isArray(workflow.phases) ? workflow.phases.length : 0;
     option.textContent = `${workflow.name}（${phaseCount} 阶段）`;
     workflowSelect.appendChild(option);
@@ -280,13 +275,7 @@ plannerForm.addEventListener('submit', async (event) => {
       expectedTeamSize: teamSizeEl.value ? Number(teamSizeEl.value) : undefined,
       workflowId: workflowSelect.value,
     };
-    const selectedOption = workflowSelect.options[workflowSelect.selectedIndex];
-    if (selectedOption?.dataset.source) {
-      payload.workflowSource = selectedOption.dataset.source;
-    }
-    if (selectedOption?.dataset.packId) {
-      payload.expansionPackId = selectedOption.dataset.packId;
-    }
+
     const plan = await window.bmadDesktop.generatePlan(payload);
     renderPlan(plan);
   } catch (error) {

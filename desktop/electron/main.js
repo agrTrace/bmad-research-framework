@@ -1,22 +1,17 @@
 const path = require('node:path');
 const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron');
 
+
 const createCatalogService = require(path.join(__dirname, '..', '..', 'services', 'saas', 'src', 'services', 'catalog-service'));
 const createProjectService = require(path.join(__dirname, '..', '..', 'services', 'saas', 'src', 'services', 'project-service'));
 
-let store;
+
 
 const rootDir = path.resolve(__dirname, '..', '..');
 const catalogService = createCatalogService({ rootDir });
 const projectService = createProjectService({ rootDir, catalogService });
 let handlersRegistered = false;
 
-async function ensureHandlers() {
-  if (handlersRegistered) return;
-
-  const StoreModule = await import('electron-store');
-  const StoreClass = StoreModule.default || StoreModule;
-  store = new StoreClass({ name: 'bmad-desktop-preferences' });
 
   handlersRegistered = true;
 
@@ -84,7 +79,7 @@ async function ensureHandlers() {
 }
 
 async function createWindow() {
-  await ensureHandlers();
+
   const windowState = store.get('windowState', { width: 1260, height: 840 });
 
   const win = new BrowserWindow({
@@ -115,12 +110,7 @@ async function createWindow() {
   return win;
 }
 
-app.whenReady().then(async () => {
-  await createWindow();
 
-  app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      await createWindow();
     }
   });
 });

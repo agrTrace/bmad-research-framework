@@ -194,12 +194,63 @@ function parseAgentReference(reference) {
   return match ? match[1] : null;
 }
 
+function normaliseId(value) {
+  if (!value) return null;
+  if (typeof value === 'string') return value.trim() || null;
+  if (typeof value === 'object' && value.id) return String(value.id).trim() || null;
+  return null;
+}
+
+function buildResolutionQueue({
+  requestedId,
+  requestedSource,
+  fallbackId,
+  fallbackSources = [],
+}) {
+  const queue = [];
+  if (requestedId) {
+    queue.push({ id: requestedId, source: requestedSource });
+    if (!requestedSource) {
+      fallbackSources.forEach((source) => {
+        queue.push({ id: requestedId, source });
+      });
+    }
+    queue.push({ id: requestedId });
+  }
+
+  if (fallbackId) {
+    fallbackSources.forEach((source) => {
+      queue.push({ id: fallbackId, source });
+    });
+    queue.push({ id: fallbackId });
+  }
+
+  return queue;
+}
+
+async function resolveCatalogEntity(fetcher, candidates) {
+  const seen = new Set();
+  for (const candidate of candidates) {
+    if (!candidate?.id) continue;
+    const source = candidate.source || undefined;
+    const key = `${candidate.id}|${source || ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    // eslint-disable-next-line no-await-in-loop
+    const entity = await fetcher(candidate.id, source);
+    if (entity) return entity;
+  }
+  return null;
+}
+
 module.exports = function createProjectService(options = {}) {
   const rootDir = options.rootDir || path.resolve(__dirname, '../../../..');
   const catalogService = options.catalogService || createCatalogService({ rootDir });
   const defaultPackId = options.defaultPackId || 'bmad-research-framework';
   const defaultTeamId = options.defaultTeamId || 'research-full-team';
   const defaultWorkflowId = options.defaultWorkflowId || 'universal-research-workflow';
+  const defaultTeamSource = options.defaultTeamSource || null;
+  const defaultWorkflowSource = options.defaultWorkflowSource || null;
 
   return {
     async createProjectPlan(payload = {}) {
@@ -217,19 +268,48 @@ module.exports = function createProjectService(options = {}) {
       const profile = selectProfile(researchType);
 
       const expansions = await catalogService.listExpansions();
-      const expansionPack =
-        expansions.find((pack) => pack.id === defaultPackId) || expansions[0];
-
+      const requestedPackId =
+        normaliseId(payload.expansionPackId || payload.expansionPack || payload.packId) || null;
+      let expansionPack = null;
+      if (requestedPackId) {
+        expansionPack = expansions.find((pack) => pack.id === requestedPackId) || null;
+      }
       if (!expansionPack) {
-        const error = new Error('未找到科研框架扩展包，请先安装扩展包后再使用SaaS服务。');
-        error.status = 500;
-        throw error;
+        expansionPack =
+          expansions.find((pack) => pack.id === defaultPackId) || expansions[0] || null;
       }
 
-      const [team, workflow] = await Promise.all([
-        catalogService.getTeam(defaultTeamId, `expansion:${expansionPack.id}`),
-        catalogService.getWorkflow(defaultWorkflowId, `expansion:${expansionPack.id}`),
-      ]);
+      const defaultSources = [];
+      if (defaultTeamSource) defaultSources.push(defaultTeamSource);
+      if (defaultWorkflowSource) defaultSources.push(defaultWorkflowSource);
+      if (expansionPack) defaultSources.push(`expansion:${expansionPack.id}`);
+
+      const requestedTeamId = normaliseId(payload.teamId || payload.team);
+      const requestedTeamSource = normaliseId(payload.teamSource || payload.team?.source);
+      const requestedWorkflowId = normaliseId(payload.workflowId || payload.workflow);
+      const requestedWorkflowSource = normaliseId(
+        payload.workflowSource || payload.workflow?.source,
+      );
+
+      const team = await resolveCatalogEntity(
+        (id, source) => catalogService.getTeam(id, source),
+        buildResolutionQueue({
+          requestedId: requestedTeamId,
+          requestedSource: requestedTeamSource,
+          fallbackId: defaultTeamId,
+          fallbackSources: defaultSources,
+        }),
+      );
+
+      const workflow = await resolveCatalogEntity(
+        (id, source) => catalogService.getWorkflow(id, source),
+        buildResolutionQueue({
+          requestedId: requestedWorkflowId,
+          requestedSource: requestedWorkflowSource,
+          fallbackId: defaultWorkflowId,
+          fallbackSources: defaultSources,
+        }),
+      );
 
       if (!team) {
         const error = new Error('未找到科研团队配置文件，无法生成项目方案。');
@@ -264,10 +344,21 @@ module.exports = function createProjectService(options = {}) {
       }
 
       const agentDetails = [];
+      const agentSourceHints = new Set();
+      if (team.source) agentSourceHints.add(team.source);
+      if (workflow.source) agentSourceHints.add(workflow.source);
+      if (expansionPack) agentSourceHints.add(`expansion:${expansionPack.id}`);
+
       for (const agentId of agentIds) {
-        let detail = await catalogService.getAgent(agentId, `expansion:${expansionPack.id}`);
+        let detail = null;
+        for (const sourceHint of agentSourceHints) {
+          // eslint-disable-next-line no-await-in-loop
+          detail = await catalogService.getAgent(agentId, sourceHint);
+          if (detail) break;
+        }
         if (!detail) {
-          detail = await catalogService.getAgent(agentId, 'core');
+          // eslint-disable-next-line no-await-in-loop
+          detail = await catalogService.getAgent(agentId);
         }
         if (detail) {
           agentDetails.push({
@@ -293,6 +384,29 @@ module.exports = function createProjectService(options = {}) {
       const successMetrics = Array.isArray(team.setupGuide?.success_metrics)
         ? team.setupGuide.success_metrics
         : profile.metrics;
+
+      const knowledgePackId =
+        workflow.expansionPack || team.expansionPack || expansionPack?.id || null;
+      const knowledgePack =
+        knowledgePackId && knowledgePackId !== 'core'
+          ? expansions.find((pack) => pack.id === knowledgePackId) || null
+          : null;
+
+      const knowledgePackSummary = knowledgePack
+        ? {
+            id: knowledgePack.id,
+            name: knowledgePack.name,
+            description: knowledgePack.description,
+          }
+        : team.source === 'core' || workflow.source === 'core'
+        ? { id: 'core', name: '核心目录', description: '基于 BMAD 核心知识库生成。' }
+        : expansionPack
+        ? {
+            id: expansionPack.id,
+            name: expansionPack.name,
+            description: expansionPack.description,
+          }
+        : null;
 
       return {
         project: {
@@ -344,14 +458,10 @@ module.exports = function createProjectService(options = {}) {
           agents: agentDetails,
         },
         knowledgeSupport: {
-          expansionPack: {
-            id: expansionPack.id,
-            name: expansionPack.name,
-            description: expansionPack.description,
-          },
-          recommendedTemplates: expansionPack.templates || [],
-          recommendedWorkflows: expansionPack.workflows || [],
-          recommendedAgents: expansionPack.agents || [],
+          expansionPack: knowledgePackSummary,
+          recommendedTemplates: knowledgePack?.templates || [],
+          recommendedWorkflows: knowledgePack?.workflows || [],
+          recommendedAgents: knowledgePack?.agents || [],
           knowledgeFocus: profile.knowledgeFocus,
         },
         nextActions: [

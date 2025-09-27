@@ -327,15 +327,13 @@ module.exports = function createCatalogService(options = {}) {
       if (sourceMeta?.type === 'core') {
         const filePath = path.join(coreDir, 'agent-teams', `${teamId}.yaml`);
         if (await fileExists(filePath)) return { filePath, sourceMeta };
-        return null;
-      }
-      if (sourceMeta?.type === 'expansion') {
+      } else if (sourceMeta?.type === 'expansion') {
         const packs = await loadExpansionPacks();
         const pack = packs.find((item) => item.id === sourceMeta.packId);
-        if (!pack) return null;
-        const filePath = path.join(pack.path, 'agent-teams', `${teamId}.yaml`);
-        if (await fileExists(filePath)) return { filePath, sourceMeta };
-        return null;
+        if (pack) {
+          const filePath = path.join(pack.path, 'agent-teams', `${teamId}.yaml`);
+          if (await fileExists(filePath)) return { filePath, sourceMeta };
+        }
       }
     }
 
@@ -451,15 +449,13 @@ module.exports = function createCatalogService(options = {}) {
       if (sourceMeta?.type === 'core') {
         const filePath = path.join(coreDir, 'workflows', `${workflowId}.yaml`);
         if (await fileExists(filePath)) return { filePath, sourceMeta };
-        return null;
-      }
-      if (sourceMeta?.type === 'expansion') {
+      } else if (sourceMeta?.type === 'expansion') {
         const packs = await loadExpansionPacks();
         const pack = packs.find((item) => item.id === sourceMeta.packId);
-        if (!pack) return null;
-        const filePath = path.join(pack.path, 'workflows', `${workflowId}.yaml`);
-        if (await fileExists(filePath)) return { filePath, sourceMeta };
-        return null;
+        if (pack) {
+          const filePath = path.join(pack.path, 'workflows', `${workflowId}.yaml`);
+          if (await fileExists(filePath)) return { filePath, sourceMeta };
+        }
       }
     }
 

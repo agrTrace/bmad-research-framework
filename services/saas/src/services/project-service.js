@@ -194,6 +194,7 @@ function parseAgentReference(reference) {
   return match ? match[1] : null;
 }
 
+
 module.exports = function createProjectService(options = {}) {
   const rootDir = options.rootDir || path.resolve(__dirname, '../../../..');
   const catalogService = options.catalogService || createCatalogService({ rootDir });
@@ -218,6 +219,7 @@ module.exports = function createProjectService(options = {}) {
       const profile = selectProfile(researchType);
 
       const expansions = await catalogService.listExpansions();
+
 
       if (!team) {
         const error = new Error('未找到科研团队配置文件，无法生成项目方案。');
@@ -252,6 +254,7 @@ module.exports = function createProjectService(options = {}) {
       }
 
       const agentDetails = [];
+
         }
         if (detail) {
           agentDetails.push({
@@ -328,6 +331,7 @@ module.exports = function createProjectService(options = {}) {
           agents: agentDetails,
         },
         knowledgeSupport: {
+
           knowledgeFocus: profile.knowledgeFocus,
         },
         nextActions: [

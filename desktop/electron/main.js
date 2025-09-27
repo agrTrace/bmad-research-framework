@@ -1,17 +1,8 @@
 const path = require('node:path');
 const { app, BrowserWindow, ipcMain, nativeTheme, screen } = require('electron');
-const Store = require('electron-store');
 
-// 初始化配置存储
-const store = new Store({
-  defaults: {
-    theme: 'system',
-    windowState: {
-      width: 1260,
-      height: 840
-    }
-  }
-});
+let Store; // will be dynamically imported (electron-store is an ESM package)
+let store;
 
 // 服务初始化
 const createCatalogService = require(path.join(__dirname, '..', '..', 'services', 'saas', 'src', 'services', 'catalog-service'));
@@ -37,13 +28,18 @@ function initializeServices() {
 // 注册IPC处理程序
 async function registerHandlers() {
   if (handlersRegistered) return;
-  
+
   try {
+    // Ensure store exists
+    if (!store) {
+      throw new Error('Store is not initialized');
+    }
+
     // 主题相关处理
-    nativeTheme.themeSource = store.get('theme');
+    nativeTheme.themeSource = store.get('theme', 'system');
 
     ipcMain.handle('preferences:get', () => ({
-      theme: store.get('theme'),
+      theme: store.get('theme', 'system'),
     }));
 
     ipcMain.handle('preferences:set-theme', (_event, theme) => {
@@ -73,10 +69,10 @@ async function registerHandlers() {
           workflows,
           expansions,
           sources: [
-            { 
-              type: 'core', 
-              source: 'core', 
-              name: '核心能力', 
+            {
+              type: 'core',
+              source: 'core',
+              name: '核心能力',
               version: process.env.CORE_VERSION || '1.0.0'
             },
             ...expansions.map(pack => ({
@@ -143,12 +139,21 @@ async function registerHandlers() {
 // 创建主窗口
 async function createWindow() {
   try {
-    const windowState = store.get('windowState');
+    // Ensure store exists
+    if (!store) {
+      throw new Error('Store is not initialized');
+    }
+
+    const windowState = store.get('windowState', {
+      width: 1260,
+      height: 840
+    });
+
     const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
 
     // 确保窗口尺寸不超过屏幕大小
-    const width = Math.min(windowState.width, screenWidth);
-    const height = Math.min(windowState.height, screenHeight);
+    const width = Math.min(windowState.width || 1260, screenWidth);
+    const height = Math.min(windowState.height || 840, screenHeight);
 
     mainWindow = new BrowserWindow({
       width,
@@ -168,11 +173,19 @@ async function createWindow() {
     });
 
     // 处理窗口位置
-    if (windowState.x !== undefined && windowState.y !== undefined) {
+    if (typeof windowState.x === 'number' && typeof windowState.y === 'number') {
       // 确保窗口位置在可视区域内
       const { x, y } = windowState;
       if (x >= 0 && x <= screenWidth && y >= 0 && y <= screenHeight) {
-        mainWindow.setBounds({ ...mainWindow.getBounds(), x, y });
+        try {
+          const bounds = mainWindow.getBounds();
+          mainWindow.setBounds({ ...bounds, x, y });
+        } catch (err) {
+          // 如果设置位置失败，忽略并居中
+          mainWindow.center();
+        }
+      } else {
+        mainWindow.center();
       }
     } else {
       mainWindow.center();
@@ -180,8 +193,12 @@ async function createWindow() {
 
     // 保存窗口状态
     const saveWindowState = () => {
-      if (!mainWindow.isMaximized()) {
-        store.set('windowState', mainWindow.getBounds());
+      try {
+        if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isMaximized()) {
+          store.set('windowState', mainWindow.getBounds());
+        }
+      } catch (err) {
+        console.warn('Failed to save window state:', err);
       }
     };
 
@@ -201,10 +218,10 @@ async function createWindow() {
 
     // 加载页面
     await mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-    
+
     // 页面加载完成后显示窗口
     mainWindow.show();
-    
+
     return mainWindow;
   } catch (error) {
     console.error('Error creating window:', error);
@@ -215,6 +232,19 @@ async function createWindow() {
 // 应用程序生命周期管理
 app.whenReady().then(async () => {
   try {
+    // 动态导入 electron-store，因为它是 ESM 包，不能用 require() 在 CommonJS 中加载
+    const storeModule = await import('electron-store');
+    Store = storeModule.default || storeModule;
+    store = new Store({
+      defaults: {
+        theme: 'system',
+        windowState: {
+          width: 1260,
+          height: 840
+        }
+      }
+    });
+
     initializeServices();
     await registerHandlers();
     await createWindow();
@@ -228,7 +258,8 @@ app.whenReady().then(async () => {
 
   } catch (error) {
     console.error('Application initialization failed:', error);
-    app.quit();
+    // If initialization fails early, give a moment for logs to flush then quit
+    setTimeout(() => app.quit(), 100);
   }
 });
 
@@ -242,6 +273,17 @@ app.on('window-all-closed', () => {
 // 优雅退出
 app.on('before-quit', () => {
   if (mainWindow) {
+    // Allow saving state before we remove listeners
+    try {
+      if (!mainWindow.isDestroyed()) {
+        if (!mainWindow.isMaximized()) {
+          const bounds = mainWindow.getBounds();
+          store && store.set && store.set('windowState', bounds);
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
     mainWindow.removeAllListeners('close');
     mainWindow = null;
   }
